@@ -1,0 +1,13 @@
+#!/bin/sh
+
+case $1 in
+	start)
+		echo -n "emud: " ; start-stop-daemon -S -b -x /usr/sbin/emud; echo "ok"
+		;;
+	stop)
+		echo -n "emud: " ; start-stop-daemon -K -x /usr/sbin/emud
+		sleep 5
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+esac
