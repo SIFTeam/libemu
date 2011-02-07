@@ -47,8 +47,8 @@ private:
 	static void		ipkgProgressCallback(const opkg_progress_data_t *progress, void *user_data);
 	static void		ipkgPackageCallback(pkg_t *pkg, void *user_data);
 	static void		ipkgUpdatesPackageCallback(pkg_t *pkg, void *user_data);
-	static void		ipkgMessageCallback(const char* str, void *user_data);
-	static void		ipkgErrorCallback(const char* str, void *user_data);
+	static void		ipkgMessageCallback(char* str, void *user_data);
+	static void		ipkgErrorCallback(char* str, void *user_data);
 
 	/* log functions */
 	void			sendNotice(const char *message, ...);

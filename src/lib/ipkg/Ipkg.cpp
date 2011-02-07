@@ -124,13 +124,13 @@ void Ipkg::ipkgUpdatesPackageCallback(pkg_t *pkg, void *user_data)
 	}
 }
 
-void Ipkg::ipkgMessageCallback(const char* str, void *user_data)
+void Ipkg::ipkgMessageCallback(char* str, void *user_data)
 {
 	Ipkg *parent = (Ipkg*)user_data;
 	parent->sendNotice(str);
 }
 
-void Ipkg::ipkgErrorCallback(const char* str, void *user_data)
+void Ipkg::ipkgErrorCallback(char* str, void *user_data)
 {
 	Ipkg *parent = (Ipkg*)user_data;
 	parent->sendError(str);
