@@ -25,7 +25,7 @@ EMU_BIN = emu
 CS_BIN = cs
 TEST_BIN = opkgtest
 
-CXXFLAGS = -I/usr/local/include/libopkg -I/usr/local/include/Sockets -I/usr/include/python2.6 -I/usr/include/libxml2
+#CXXFLAGS = -I/usr/local/include/libopkg -I/usr/local/include/Sockets -I/usr/include/python2.6 -I/usr/include/libxml2
 
 all: clean $(LIBS) $(SWIGS_LIBS) $(EMUD_BIN) $(EMU_BIN) $(CS_BIN) $(TEST_BIN)
 
