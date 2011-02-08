@@ -94,9 +94,6 @@ public:
 	bool			categoryNext();
 	IpkgCategory*	categoryGet();
 	IpkgCategory*	categoryGetAll();
-	//IpkgCategory*	categoryGetPlugins();
-	//IpkgCategory*	categoryGetSettings();
-	//IpkgCategory*	categoryGetEmulators();
 	IpkgCategory*	categoryGetUpdates();
 	IpkgCategory*	categorySearch(const char *name);
 	int				categoryCount();
