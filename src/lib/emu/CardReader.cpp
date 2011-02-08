@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "CardReader.h"
-#include "ConfigFile.h"
+#include "../3rd/ConfigFile.h"
 
 CardReader::CardReader(const char *path, EmuMessages *messages)
 {

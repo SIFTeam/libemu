@@ -56,6 +56,27 @@ IpkgPackage::IpkgPackage(pkg_t *pkg)
 		description[0] = '\0';
 	}
 
+	icon = new char[1];
+	icon[0] = '\0';
+
+	friendlyname = new char[1];
+	friendlyname[0] = '\0';
+
+	previewimage1 = new char[1];
+	previewimage1[0] = '\0';
+
+	previewimage2 = new char[1];
+	previewimage2[0] = '\0';
+
+	previewimage3 = new char[1];
+	previewimage3[0] = '\0';
+
+	previewimage4 = new char[1];
+	previewimage4[0] = '\0';
+
+	previewimage5 = new char[1];
+	previewimage5[0] = '\0';
+
 	size = pkg->size;
 	installed = ((pkg->state_status & SS_INSTALLED) != 0);
 }
@@ -67,4 +88,60 @@ IpkgPackage::~IpkgPackage()
 	delete version;
 	delete architecture;
 	delete description;
+	delete icon;
+	delete friendlyname;
+	delete previewimage1;
+	delete previewimage2;
+	delete previewimage3;
+	delete previewimage4;
+	delete previewimage5;
+}
+
+void IpkgPackage::setIcon(char* value)
+{
+	delete icon;
+	icon = new char[strlen(value)+1];
+	strcpy(icon, value);
+}
+
+void IpkgPackage::setFriendlyName(char* value)
+{
+	delete friendlyname;
+	friendlyname = new char[strlen(value)+1];
+	strcpy(friendlyname, value);
+}
+
+void IpkgPackage::setPreviewImage1(char* value)
+{
+	delete previewimage1;
+	previewimage1 = new char[strlen(value)+1];
+	strcpy(previewimage1, value);
+}
+
+void IpkgPackage::setPreviewImage2(char* value)
+{
+	delete previewimage2;
+	previewimage2 = new char[strlen(value)+1];
+	strcpy(previewimage2, value);
+}
+
+void IpkgPackage::setPreviewImage3(char* value)
+{
+	delete previewimage3;
+	previewimage3 = new char[strlen(value)+1];
+	strcpy(previewimage3, value);
+}
+
+void IpkgPackage::setPreviewImage4(char* value)
+{
+	delete previewimage4;
+	previewimage4 = new char[strlen(value)+1];
+	strcpy(previewimage4, value);
+}
+
+void IpkgPackage::setPreviewImage5(char* value)
+{
+	delete previewimage5;
+	previewimage5 = new char[strlen(value)+1];
+	strcpy(previewimage5, value);
 }

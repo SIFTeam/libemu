@@ -12,6 +12,17 @@ IpkgCategory::IpkgCategory(const char *name)
 	this->m_Name = new char[strlen(name)+ 1];
 	strcpy(this->m_Name, name);
 	this->m_Virtual = false;
+	this->m_Smart = false;
+	this->m_Icon = new char[1];
+	this->m_Icon[0] = '\0';
+	this->m_RuleType = new char[1];
+	this->m_RuleType[0] = '\0';
+	this->m_RuleName = false;
+	this->m_RuleCategory = false;
+	this->m_Regexp = new char[1];
+	this->m_Regexp[0] = '\0';
+	this->m_RegexpCompiled = NULL;
+	this->m_XmlNode = NULL;
 }
 
 IpkgCategory::IpkgCategory(const char *name, bool is_virtual)
@@ -19,6 +30,17 @@ IpkgCategory::IpkgCategory(const char *name, bool is_virtual)
 	this->m_Name = new char[strlen(name)+ 1];
 	strcpy(this->m_Name, name);
 	this->m_Virtual = is_virtual;
+	this->m_Smart= false;
+	this->m_Icon = new char[1];
+	this->m_Icon[0] = '\0';
+	this->m_RuleType = new char[1];
+	this->m_RuleType[0] = '\0';
+	this->m_RuleName = false;
+	this->m_RuleCategory = false;
+	this->m_Regexp = new char[1];
+	this->m_Regexp[0] = '\0';
+	this->m_RegexpCompiled = NULL;
+	this->m_XmlNode = NULL;
 }
 
 IpkgCategory::~IpkgCategory()
@@ -31,6 +53,12 @@ IpkgCategory::~IpkgCategory()
 	}
 
 	if (this->m_Name) delete this->m_Name;
+	if (this->m_Icon) delete this->m_Icon;
+	if (this->m_RuleType) delete this->m_RuleType;
+	if (this->m_Regexp) delete this->m_Regexp;
+
+	if (this->m_RegexpCompiled)
+		pcre_free(this->m_RegexpCompiled);
 }
 
 bool IpkgCategory::operator==(const char *category)
@@ -66,16 +94,100 @@ int IpkgCategory::countInstalled()
 	return ret;
 }
 
-void IpkgCategory::setName(const char *name)
+void IpkgCategory::setName(const char *value)
 {
 	if (this->m_Name) delete this->m_Name;
-	this->m_Name = new char[strlen(name)+ 1];
-	strcpy(this->m_Name, name);
+	this->m_Name = new char[strlen(value)+ 1];
+	strcpy(this->m_Name, value);
 }
 
 const char *IpkgCategory::getName()
 {
 	return this->m_Name;
+}
+
+void IpkgCategory::setIcon(char *value)
+{
+	if (this->m_Icon) delete this->m_Icon;
+	this->m_Icon = new char[strlen(value)+ 1];
+	strcpy(this->m_Icon, value);
+}
+
+char *IpkgCategory::getIcon()
+{
+	return this->m_Icon;
+}
+
+void IpkgCategory::setRuleType(char *value)
+{
+	if (this->m_RuleType) delete this->m_RuleType;
+	this->m_RuleType = new char[strlen(value)+ 1];
+	strcpy(this->m_RuleType, value);
+
+	this->m_RuleName = false;
+	this->m_RuleCategory = false;
+	if (strcmp(this->m_RuleType, "name") == 0)
+		this->m_RuleName = true;
+	else if (strcmp(this->m_RuleType, "category") == 0)
+		this->m_RuleCategory = true;
+}
+
+char *IpkgCategory::getRuleType()
+{
+	return this->m_RuleType;
+}
+
+bool IpkgCategory::isRuleName()
+{
+	return this->m_RuleName;
+}
+
+bool IpkgCategory::isRuleCategory()
+{
+	return this->m_RuleCategory;
+}
+
+void IpkgCategory::setRegexp(char *value)
+{
+	if (this->m_Regexp) delete this->m_Regexp;
+	this->m_Regexp = new char[strlen(value)+ 1];
+	strcpy(this->m_Regexp, value);
+
+	const char *error;
+	int erroffset;
+	if (this->m_RegexpCompiled)
+		pcre_free(this->m_RegexpCompiled);
+	this->m_RegexpCompiled = pcre_compile(this->m_Regexp, 0, &error, &erroffset, NULL);
+}
+
+char *IpkgCategory::getRegexp()
+{
+	return this->m_Regexp;
+}
+
+pcre *IpkgCategory::getRegexpCompiled()
+{
+	return this->m_RegexpCompiled;
+}
+
+void IpkgCategory::setSmart(bool value)
+{
+	this->m_Smart = value;
+}
+
+bool IpkgCategory::isSmart()
+{
+	return this->m_Smart;
+}
+
+void IpkgCategory::setXmlNode(xmlNode *value)
+{
+	this->m_XmlNode = value;
+}
+
+xmlNode* IpkgCategory::getXmlNode()
+{
+	return this->m_XmlNode;
 }
 
 bool IpkgCategory::packageSort(IpkgPackage *a, IpkgPackage *b)

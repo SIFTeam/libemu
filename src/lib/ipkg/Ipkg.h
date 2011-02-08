@@ -5,6 +5,7 @@
 #include <pthread.h>
 
 #include "IpkgCategory.h"
+#include "IpkgXml.h"
 
 typedef double (*PRGCBFUNC)(double, double, void *);
 typedef void (*WRNCBFUNC)(char *, void *);
@@ -30,10 +31,6 @@ private:
 	std::list<IpkgCategory*>::iterator	m_CategoriesIterator;
 
 	IpkgCategory*	m_AllPackages;
-	IpkgCategory*	m_PluginsPackages;
-	IpkgCategory*	m_SettingsPackages;
-	IpkgCategory*	m_EmulatorsPackages;
-	IpkgCategory*	m_ExtraPackages;
 	IpkgCategory*	m_UpdatesPackages;
 
 	/* actions */
@@ -56,6 +53,15 @@ private:
 
 	/* category handling */
 	static bool		categorySort(IpkgCategory *a, IpkgCategory *b);
+
+	/* xml categories */
+	int				m_XmlCategoriesCount;
+	IpkgXml*		m_XML;
+	IpkgCategory**	m_XmlCategories;
+
+	/* config */
+	std::string		m_MenuUrl;
+	std::string		m_StbType;
 
 public:
 	Ipkg();
@@ -88,13 +94,16 @@ public:
 	bool			categoryNext();
 	IpkgCategory*	categoryGet();
 	IpkgCategory*	categoryGetAll();
-	IpkgCategory*	categoryGetPlugins();
-	IpkgCategory*	categoryGetSettings();
-	IpkgCategory*	categoryGetEmulators();
-	IpkgCategory*	categoryGetExtra();
+	//IpkgCategory*	categoryGetPlugins();
+	//IpkgCategory*	categoryGetSettings();
+	//IpkgCategory*	categoryGetEmulators();
 	IpkgCategory*	categoryGetUpdates();
 	IpkgCategory*	categorySearch(const char *name);
 	int				categoryCount();
+
+	/* xml categories */
+	int				xmlCategoriesCount();
+	IpkgCategory*	categoryGetXml(int id);
 };
 
 #endif /* IPKG_H_ */

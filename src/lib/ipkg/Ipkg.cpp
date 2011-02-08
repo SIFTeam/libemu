@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <pcre.h>
 
 extern "C" {
 #include <opkg.h>
@@ -11,6 +12,7 @@ extern "C" {
 using namespace std;
 
 #include "Ipkg.h"
+#include "../3rd/ConfigFile.h"
 
 pthread_mutex_t opkg_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -21,16 +23,31 @@ Ipkg::Ipkg()
 	this->m_NoticeCallback = NULL;
 	this->m_EndCallback = NULL;
 	this->m_AllPackages = NULL;
-	this->m_PluginsPackages = NULL;
-	this->m_SettingsPackages = NULL;
-	this->m_EmulatorsPackages = NULL;
-	this->m_ExtraPackages = NULL;
 	this->m_UpdatesPackages = NULL;
+	this->m_XmlCategoriesCount = 0;
+
+	this->m_XML = new IpkgXml();
+
+	try
+	{
+		ConfigFile config("/etc/libsif.conf");
+		config.readInto(this->m_MenuUrl, "menu_url");
+		config.readInto(this->m_StbType, "stb_type");
+	}
+	catch (ConfigFile::file_not_found e)
+	{
+		// nothing to do
+	}
+	catch (ConfigFile::key_not_found e)
+	{
+		// nothing to do
+	}
+
 }
 
 Ipkg::~Ipkg()
 {
-
+	delete this->m_XML;
 }
 
 /**********************************************************************************
@@ -99,18 +116,116 @@ void Ipkg::ipkgPackageCallback(pkg_t *pkg, void *user_data)
 		category->packageAdd(package);
 		parent->m_AllPackages->packageAdd(package);
 
-		if (strlen(package->name) > 15)
-			if (memcmp(package->name, "enigma2-plugin-", 15) == 0)
-				parent->m_PluginsPackages->packageAdd(package);
+		for (int i=0; i<parent->m_XmlCategoriesCount; i++)
+		{
+			if (parent->m_XmlCategories[i]->isSmart() &&
+					parent->m_XmlCategories[i]->getRegexpCompiled() != NULL &&
+					(parent->m_XmlCategories[i]->isRuleName() || parent->m_XmlCategories[i]->isRuleCategory()))
+			{
+				int ovector[1];
+				int rc;
+				if (parent->m_XmlCategories[i]->isRuleName())
+					rc = pcre_exec(parent->m_XmlCategories[i]->getRegexpCompiled(),
+							NULL, pkg->name, strlen(package->name), 0, 0, ovector, 1);
+				else
+					rc = pcre_exec(parent->m_XmlCategories[i]->getRegexpCompiled(),
+							NULL, pkg->section, strlen(package->section), 0, 0, ovector, 1);
 
-		if (strcmp(package->section, "settings") == 0)
-			parent->m_SettingsPackages->packageAdd(package);
+				if (rc == 0)
+					parent->m_XmlCategories[i]->packageAdd(package);
+			}
+			else
+			{
+				xmlNode* node = NULL;
+				for (node = parent->m_XmlCategories[i]->getXmlNode()->children; node; node = node->next)
+				{
+					if (strcmp((char*)node->name, "package") == 0)
+					{
+						char *tmp = parent->m_XML->getNodeAttr(node, "package");
+						if (strcmp(tmp, package->name) == 0)
+						{
+							bool supported = false;
+							char *tmp2 = parent->m_XML->getNodeAttr(node, "supported_stb");
+							if (tmp2 != NULL)
+							{
+								char *p = strtok(tmp2, ",");
+								while (p)
+								{
+									if (strcmp(p, parent->m_StbType.c_str()) == 0)
+									{
+										supported = true;
+										break;
+									}
+									else if (strcmp(p, "all") == 0)
+									{
+										supported = true;
+										break;
+									}
+									p = strtok('\0', ",");
+								}
 
-		if (strcmp(package->section, "emu") == 0 || strcmp(package->section, "emulators") == 0 || strcmp(package->section, "emucam") == 0)
-			parent->m_EmulatorsPackages->packageAdd(package);
+								delete tmp2;
+							}
 
-		if (strcmp(package->section, "extra") == 0)
-			parent->m_ExtraPackages->packageAdd(package);
+							if (supported)
+							{
+								tmp2 = parent->m_XML->getNodeAttr(node, "name");
+								if (tmp2 != NULL)
+								{
+									package->setFriendlyName(tmp2);
+									delete tmp2;
+								}
+								tmp2 = parent->m_XML->getNodeAttr(node, "icon");
+								if (tmp2 != NULL)
+								{
+									package->setIcon(tmp2);
+									delete tmp2;
+								}
+
+								xmlNode* node2 = NULL;
+								int count = 0;
+								for (node2 = node->children; node2; node2 = node2->next)
+								{
+									if (strcmp((char*)node2->name, "preview") == 0)
+									{
+										tmp2 = parent->m_XML->getNodeAttr(node2, "image");
+										if (tmp2 != NULL)
+										{
+											switch (count)
+											{
+											case 0:
+												package->setPreviewImage1(tmp2);
+												break;
+											case 1:
+												package->setPreviewImage2(tmp2);
+												break;
+											case 2:
+												package->setPreviewImage3(tmp2);
+												break;
+											case 3:
+												package->setPreviewImage4(tmp2);
+												break;
+											case 4:
+												package->setPreviewImage5(tmp2);
+												break;
+											}
+											delete tmp2;
+										}
+										count++;
+									}
+
+									if (count > 4)
+										break;
+								}
+
+								parent->m_XmlCategories[i]->packageAdd(package);
+							}
+						}
+						delete tmp;
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -206,6 +321,11 @@ void *Ipkg::TUpdate(void *ptr)
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
+
+	/* xml for customized categories */
+	if (!parent->m_XML->readXML(parent->m_MenuUrl.c_str()))
+		parent->sendError("Cannot get SIFTeam preferred categories");
+	parent->m_XmlCategoriesCount = 0;
 
 	if (parent->m_EndCallback)
 		parent->m_EndCallback(true, parent->m_EndClientData);
@@ -366,11 +486,55 @@ bool Ipkg::isUpgradeable()
 void Ipkg::categoryInit()
 {
 	this->m_AllPackages = new IpkgCategory("all packages", true);
-	this->m_PluginsPackages = new IpkgCategory("plugins", true);
-	this->m_SettingsPackages = new IpkgCategory("settings", true);
-	this->m_EmulatorsPackages = new IpkgCategory("emulators", true);
-	this->m_ExtraPackages = new IpkgCategory("extra", true);
 	this->m_UpdatesPackages = new IpkgCategory("updates");		// this is real.. not virtual
+
+	/* xml for customized categories */
+	this->m_XmlCategoriesCount = this->m_XML->getCategoriesCount();
+	this->m_XmlCategories = new IpkgCategory* [this->m_XmlCategoriesCount];
+	for (int i=0; i<this->m_XmlCategoriesCount; i++)
+	{
+		xmlNode* node = this->m_XML->getCategoryNode(i);
+		char *tmp = this->m_XML->getNodeAttr(node, "name");
+		if (tmp != NULL)
+		{
+			this->m_XmlCategories[i] = new IpkgCategory(tmp, true);
+			delete tmp;
+		}
+		else
+			this->m_XmlCategories[i] = new IpkgCategory("unknow", true);
+
+		this->m_XmlCategories[i]->setXmlNode(node);
+		tmp = this->m_XML->getNodeAttr(node, "icon");
+		if (tmp != NULL)
+		{
+			this->m_XmlCategories[i]->setIcon(tmp);
+			delete tmp;
+		}
+
+		tmp = this->m_XML->getNodeAttr(node, "type");
+		if (tmp != NULL)
+		{
+			if (strcmp(tmp, "smart") == 0)
+			{
+				this->m_XmlCategories[i]->setSmart(true);
+
+				char *tmp2 = this->m_XML->getNodeAttr(node, "ruletype");
+				if (tmp2 != NULL)
+				{
+					this->m_XmlCategories[i]->setRuleType(tmp2);
+					delete tmp2;
+				}
+
+				tmp2 = this->m_XML->getNodeAttr(node, "regexp");
+				if (tmp2 != NULL)
+				{
+					this->m_XmlCategories[i]->setRegexp(tmp2);
+					delete tmp2;
+				}
+			}
+			delete tmp;
+		}
+	}
 
 	pthread_mutex_lock(&opkg_mutex);
 	if (opkg_new() == 0)
@@ -386,10 +550,10 @@ void Ipkg::categoryInit()
 		(*it)->sort();
 
 	this->m_AllPackages->sort();
-	this->m_PluginsPackages->sort();
-	this->m_SettingsPackages->sort();
-	this->m_EmulatorsPackages->sort();
-	this->m_ExtraPackages->sort();
+	//this->m_PluginsPackages->sort();
+	//this->m_SettingsPackages->sort();
+	//this->m_EmulatorsPackages->sort();
+	//this->m_ExtraPackages->sort();
 	this->m_UpdatesPackages->sort();
 
 	this->m_Categories.sort(Ipkg::categorySort);
@@ -403,11 +567,12 @@ void Ipkg::categoryDeinit()
 		delete *it;
 
 	delete this->m_AllPackages;
-	delete this->m_PluginsPackages;
-	delete this->m_SettingsPackages;
-	delete this->m_EmulatorsPackages;
-	delete this->m_ExtraPackages;
 	delete this->m_UpdatesPackages;
+
+	for (int i=0; i<this->m_XmlCategoriesCount; i++)
+		delete this->m_XmlCategories[i];
+
+	delete this->m_XmlCategories;
 
 	this->m_Categories.clear();
 }
@@ -421,26 +586,6 @@ void Ipkg::categoryRefresh()
 IpkgCategory* Ipkg::categoryGetAll()
 {
 	return this->m_AllPackages;
-}
-
-IpkgCategory* Ipkg::categoryGetPlugins()
-{
-	return this->m_PluginsPackages;
-}
-
-IpkgCategory* Ipkg::categoryGetSettings()
-{
-	return this->m_SettingsPackages;
-}
-
-IpkgCategory* Ipkg::categoryGetEmulators()
-{
-	return this->m_EmulatorsPackages;
-}
-
-IpkgCategory* Ipkg::categoryGetExtra()
-{
-	return this->m_ExtraPackages;
 }
 
 IpkgCategory* Ipkg::categoryGetUpdates()
@@ -496,4 +641,14 @@ IpkgCategory* Ipkg::categorySearch(const char *name)
 int Ipkg::categoryCount()
 {
 	return this->m_Categories.size();
+}
+
+int Ipkg::xmlCategoriesCount()
+{
+	return this->m_XmlCategoriesCount;
+}
+
+IpkgCategory* Ipkg::categoryGetXml(int id)
+{
+	return this->m_XmlCategories[id];
 }

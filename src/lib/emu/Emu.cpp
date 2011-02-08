@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "Emu.h"
-#include "ConfigFile.h"
+#include "../3rd/ConfigFile.h"
 
 Emu::Emu(const char *path, EmuMessages *messages)
 {
