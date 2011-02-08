@@ -550,11 +550,11 @@ void Ipkg::categoryInit()
 		(*it)->sort();
 
 	this->m_AllPackages->sort();
-	//this->m_PluginsPackages->sort();
-	//this->m_SettingsPackages->sort();
-	//this->m_EmulatorsPackages->sort();
-	//this->m_ExtraPackages->sort();
 	this->m_UpdatesPackages->sort();
+
+	for (int i=0; i<this->m_XmlCategoriesCount; i++)
+		if (this->m_XmlCategories[i]->isSmart())
+			this->m_XmlCategories[i]->sort();
 
 	this->m_Categories.sort(Ipkg::categorySort);
 	this->m_CategoriesIterator = this->m_Categories.begin();
