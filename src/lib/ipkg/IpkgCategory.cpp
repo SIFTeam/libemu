@@ -15,6 +15,8 @@ IpkgCategory::IpkgCategory(const char *name)
 	this->m_Smart = false;
 	this->m_Icon = new char[1];
 	this->m_Icon[0] = '\0';
+	this->m_Shortcut = new char[1];
+	this->m_Shortcut[0] = '\0';
 	this->m_RuleType = new char[1];
 	this->m_RuleType[0] = '\0';
 	this->m_RuleName = false;
@@ -33,6 +35,8 @@ IpkgCategory::IpkgCategory(const char *name, bool is_virtual)
 	this->m_Smart= false;
 	this->m_Icon = new char[1];
 	this->m_Icon[0] = '\0';
+	this->m_Shortcut = new char[1];
+	this->m_Shortcut[0] = '\0';
 	this->m_RuleType = new char[1];
 	this->m_RuleType[0] = '\0';
 	this->m_RuleName = false;
@@ -54,6 +58,7 @@ IpkgCategory::~IpkgCategory()
 
 	if (this->m_Name) delete this->m_Name;
 	if (this->m_Icon) delete this->m_Icon;
+	if (this->m_Shortcut) delete this->m_Shortcut;
 	if (this->m_RuleType) delete this->m_RuleType;
 	if (this->m_Regexp) delete this->m_Regexp;
 
@@ -116,6 +121,18 @@ void IpkgCategory::setIcon(char *value)
 char *IpkgCategory::getIcon()
 {
 	return this->m_Icon;
+}
+
+void IpkgCategory::setShortcut(char *value)
+{
+	if (this->m_Shortcut) delete this->m_Shortcut;
+	this->m_Shortcut = new char[strlen(value)+ 1];
+	strcpy(this->m_Shortcut, value);
+}
+
+char *IpkgCategory::getShortcut()
+{
+	return this->m_Shortcut;
 }
 
 void IpkgCategory::setRuleType(char *value)

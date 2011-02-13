@@ -324,7 +324,10 @@ void *Ipkg::TUpdate(void *ptr)
 
 	/* xml for customized categories */
 	if (!parent->m_XML->readXML(parent->m_MenuUrl.c_str()))
+	{
 		parent->sendError("Cannot get SIFTeam preferred categories");
+		parent->m_XML->readXML("/etc/menu_default.xml");
+	}
 	parent->m_XmlCategoriesCount = 0;
 
 	if (parent->m_EndCallback)
@@ -490,6 +493,12 @@ void Ipkg::categoryInit()
 
 	/* xml for customized categories */
 	this->m_XmlCategoriesCount = this->m_XML->getCategoriesCount();
+	if (this->m_XmlCategoriesCount == 0)
+	{
+		this->m_XML->readXML("/etc/menu_default.xml");
+		this->m_XmlCategoriesCount = this->m_XML->getCategoriesCount();
+	}
+
 	this->m_XmlCategories = new IpkgCategory* [this->m_XmlCategoriesCount];
 	for (int i=0; i<this->m_XmlCategoriesCount; i++)
 	{
@@ -508,6 +517,13 @@ void Ipkg::categoryInit()
 		if (tmp != NULL)
 		{
 			this->m_XmlCategories[i]->setIcon(tmp);
+			delete tmp;
+		}
+
+		tmp = this->m_XML->getNodeAttr(node, "shortcut");
+		if (tmp != NULL)
+		{
+			this->m_XmlCategories[i]->setShortcut(tmp);
 			delete tmp;
 		}
 

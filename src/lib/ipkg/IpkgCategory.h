@@ -17,6 +17,7 @@ private:
 	bool								m_Virtual;
 	char*								m_Name;
 	char*								m_Icon;
+	char*								m_Shortcut;
 	bool								m_Smart;
 	char*								m_RuleType;
 	bool								m_RuleName;
@@ -41,9 +42,11 @@ public:
 	void			sort();
 
 	void			setName(const char *value);
-	const char*		getName();
+	const char*	getName();
 	void			setIcon(char *value);
 	char*			getIcon();
+	void			setShortcut(char *value);
+	char*			getShortcut();
 	void			setRuleType(char *value);
 	char*			getRuleType();
 	bool			isRuleName();

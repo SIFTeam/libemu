@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<categories>
+	<category type="smart" name="Emulators" icon="emulators.png" ruletype="category" regexp=".*emu.*" />
+	<category type="smart" name="All plugins" icon="plugins.png" ruletype="name" regexp="^enigma2-plugin.*" shortcut="plugins_remove" />
+</categories>
