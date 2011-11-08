@@ -30,7 +30,7 @@ TEST_BIN = opkgtest
 all: clean $(LIBS) $(SWIGS_LIBS) $(EMUD_BIN) $(EMU_BIN) $(CS_BIN) $(TEST_BIN)
 
 $(SWIGS):
-	swig -threads -c++ -python $(@:_wrap.o=.i)
+	swig -O -threads -c++ -python $(@:_wrap.o=.i)
 	$(CXX) $(CXXFLAGS) -c -fpic -o $@ $(@:.o=.cxx)
 
 $(LIBS_OBJS):
