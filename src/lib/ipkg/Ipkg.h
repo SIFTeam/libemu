@@ -44,8 +44,10 @@ private:
 	static void		ipkgProgressCallback(const opkg_progress_data_t *progress, void *user_data);
 	static void		ipkgPackageCallback(pkg_t *pkg, void *user_data);
 	static void		ipkgUpdatesPackageCallback(pkg_t *pkg, void *user_data);
-	static void		ipkgMessageCallback(char* str, void *user_data);
-	static void		ipkgErrorCallback(char* str, void *user_data);
+	static void		ipkgCountPackagesCallback(pkg_t *pkg, void *user_data);
+	//static void		ipkgMessageCallback(char* str, void *user_data);
+	//static void		ipkgErrorCallback(char* str, void *user_data);
+	static void		ipkgMessageCallback(int, const char *fmt, va_list ap);
 
 	/* log functions */
 	void			sendNotice(const char *message, ...);

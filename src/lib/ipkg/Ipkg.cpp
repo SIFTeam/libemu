@@ -15,9 +15,12 @@ using namespace std;
 #include "../3rd/ConfigFile.h"
 
 pthread_mutex_t opkg_mutex = PTHREAD_MUTEX_INITIALIZER;
+Ipkg *staticInstance = NULL;
 
 Ipkg::Ipkg()
 {
+	staticInstance = this;
+	
 	this->m_ProgressCallback = NULL;
 	this->m_ErrorCallback = NULL;
 	this->m_NoticeCallback = NULL;
@@ -239,6 +242,13 @@ void Ipkg::ipkgUpdatesPackageCallback(pkg_t *pkg, void *user_data)
 	}
 }
 
+void Ipkg::ipkgCountPackagesCallback(pkg_t *pkg, void *user_data)
+{
+	int *count = (int*)user_data;
+	(*count)++;
+}
+
+/*
 void Ipkg::ipkgMessageCallback(char* str, void *user_data)
 {
 	Ipkg *parent = (Ipkg*)user_data;
@@ -249,6 +259,18 @@ void Ipkg::ipkgErrorCallback(char* str, void *user_data)
 {
 	Ipkg *parent = (Ipkg*)user_data;
 	parent->sendError(str);
+}
+*/
+
+void Ipkg::ipkgMessageCallback(int, const char *fmt, va_list ap)
+{
+#define MSG_LEN 4096
+	char msg[MSG_LEN];
+	if (vsnprintf(msg, MSG_LEN, fmt, ap) < 0)
+		return;
+	if (staticInstance)
+		staticInstance->sendError(msg);
+	return;
 }
 
 /**********************************************************************************
@@ -303,6 +325,7 @@ void Ipkg::join()
 static const char *force_defaults_key = "force_defaults";
 static const char *force_reinstall_key = "force_reinstall";
 static const char *verbosity_key = "verbosity";
+static const char *download_only_key = "download_only";
 
 void *Ipkg::TUpdate(void *ptr)
 {
@@ -314,10 +337,9 @@ void *Ipkg::TUpdate(void *ptr)
 	{
 		opkg_set_option((char*)force_defaults_key, &force_defaults);
 		opkg_set_option((char*)verbosity_key, &verbosity);
-		opkg_message_set_callbacks(Ipkg::ipkgMessageCallback, Ipkg::ipkgErrorCallback, ptr);
+		conf->opkg_vmessage = Ipkg::ipkgMessageCallback;
 		opkg_update_package_lists(Ipkg::ipkgProgressCallback, ptr);
-
-		opkg_message_unset_callbacks();
+		conf->opkg_vmessage = NULL;
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
@@ -340,6 +362,7 @@ void *Ipkg::TDownload(void *ptr)
 {
 	bool force_defaults = true;
 	int verbosity = 1;
+	int download_only = 1;
 	Ipkg *parent = (Ipkg*)ptr;
 
 	pthread_mutex_lock(&opkg_mutex);
@@ -347,10 +370,10 @@ void *Ipkg::TDownload(void *ptr)
 	{
 		opkg_set_option((char*)force_defaults_key, &force_defaults);
 		opkg_set_option((char*)verbosity_key, &verbosity);
-		opkg_message_set_callbacks(Ipkg::ipkgMessageCallback, Ipkg::ipkgErrorCallback, ptr);
-		opkg_download_package(parent->m_AsyncArgs, Ipkg::ipkgProgressCallback, ptr);
-
-		opkg_message_unset_callbacks();
+		opkg_set_option((char*)download_only_key, &download_only);
+		conf->opkg_vmessage = Ipkg::ipkgMessageCallback;
+		opkg_install_package(parent->m_AsyncArgs, Ipkg::ipkgProgressCallback, ptr);
+		conf->opkg_vmessage = NULL;
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
@@ -373,10 +396,9 @@ void *Ipkg::TInstall(void *ptr)
 		opkg_set_option((char*)force_defaults_key, &force_defaults);
 		opkg_set_option((char*)force_reinstall_key, &force_defaults);
 		opkg_set_option((char*)verbosity_key, &verbosity);
-		opkg_message_set_callbacks(Ipkg::ipkgMessageCallback, Ipkg::ipkgErrorCallback, ptr);
+		conf->opkg_vmessage = Ipkg::ipkgMessageCallback;
 		opkg_install_package(parent->m_AsyncArgs, Ipkg::ipkgProgressCallback, ptr);
-
-		opkg_message_unset_callbacks();
+		conf->opkg_vmessage = NULL;
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
@@ -398,10 +420,9 @@ void *Ipkg::TRemove(void *ptr)
 	{
 		opkg_set_option((char*)force_defaults_key, &force_defaults);
 		opkg_set_option((char*)verbosity_key, &verbosity);
-		opkg_message_set_callbacks(Ipkg::ipkgMessageCallback, Ipkg::ipkgErrorCallback, ptr);
+		conf->opkg_vmessage = Ipkg::ipkgMessageCallback;
 		opkg_remove_package(parent->m_AsyncArgs, Ipkg::ipkgProgressCallback, ptr);
-
-		opkg_message_unset_callbacks();
+		conf->opkg_vmessage = NULL;
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
@@ -424,10 +445,9 @@ void *Ipkg::TUpgrade(void *ptr)
 		opkg_set_option((char*)force_defaults_key, &force_defaults);
 		opkg_set_option((char*)force_reinstall_key, &force_defaults);
 		opkg_set_option((char*)verbosity_key, &verbosity);
-		opkg_message_set_callbacks(Ipkg::ipkgMessageCallback, Ipkg::ipkgErrorCallback, ptr);
+		conf->opkg_vmessage = Ipkg::ipkgMessageCallback;
 		opkg_upgrade_all(Ipkg::ipkgProgressCallback, ptr);
-
-		opkg_message_unset_callbacks();
+		conf->opkg_vmessage = NULL;
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
@@ -475,7 +495,9 @@ bool Ipkg::isUpgradeable()
 	pthread_mutex_lock(&opkg_mutex);
 	if (opkg_new() == 0)
 	{
-		ret = (opkg_is_upgradable() == 1);
+		int count;
+		opkg_list_upgradable_packages(Ipkg::ipkgCountPackagesCallback, &count);
+		ret = (count > 0);
 		opkg_free();
 	}
 	pthread_mutex_unlock(&opkg_mutex);
