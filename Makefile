@@ -42,16 +42,16 @@ $(CS_OBJS):
 $(LIBS): $(LIBS_OBJS)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(LIBS_OBJS) -lopkg -lcurl -lpthread -lSockets -lxml2 -lpcre
 
-$(SWIGS_LIBS): $(SWIGS)
+$(SWIGS_LIBS): $(SWIGS) $(LIBS)
 	$(CXX) $(LDFLAGS) -shared -o $@ $(SWIGS) -L. -lopkg -lcurl -lpthread -lSockets -lxml2 -lpcre -lemu
 
-$(EMUD_BIN): $(EMUD_OBJS)
+$(EMUD_BIN): $(EMUD_OBJS) $(LIBS)
 	$(CXX) $(LDFLAGS) -o $@ $(EMUD_OBJS) -L. -lemu -lpthread -lSockets -lxml2 -lpcre
 
-$(EMU_BIN): $(EMU_OBJS)
+$(EMU_BIN): $(EMU_OBJS) $(LIBS)
 	$(CXX) $(LDFLAGS) -o $@ $(EMU_OBJS) -L. -lemu -lpthread -lSockets -lxml2 -lpcre
 	
-$(CS_BIN): $(CS_OBJS)
+$(CS_BIN): $(CS_OBJS) $(LIBS)
 	$(CXX) $(LDFLAGS) -o $@ $(CS_OBJS) -L. -lemu -lpthread -lSockets -lxml2 -lpcre
 
 clean:
